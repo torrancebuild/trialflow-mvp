@@ -69,7 +69,12 @@ function App({ user, onSignOut }) {
   function resetTask() { setTasks((previous) => ({ ...previous, [selected]: buildTasks()[selected] })); setLastError(''); setEditMode(false) }
   async function handleSignOut() {
     setSigningOut(true)
-    try { await onSignOut() } catch (error) { setLastError(error.message || 'Unable to sign out. Please try again.') } finally { setSigningOut(false) }
+    clearSupabaseSessionStorage()
+    const timeout = new Promise((resolve) => setTimeout(resolve, 1500))
+    try { await Promise.race([Promise.resolve(onSignOut()).catch(() => undefined), timeout]) } finally {
+      clearSupabaseSessionStorage()
+      window.location.replace('/')
+    }
   }
 
   return <div className="app-shell">{lastError && <div className="workflow-error" role="alert"><span>{lastError}</span><button onClick={() => setLastError('')}>Dismiss</button><button onClick={resetTask}>Reset task</button></div>}
