@@ -15,7 +15,6 @@ The implementation-ready local workflow-engine and state-machine design is docum
 The portfolio narrative and tradeoffs are documented in [CASE_STUDY.md](./CASE_STUDY.md).
 The live presentation flow is documented in [DEMO_SCRIPT.md](./DEMO_SCRIPT.md).
 
-Authentication acceptance criteria are documented in [AUTH_ACCEPTANCE.md](./AUTH_ACCEPTANCE.md).
 The production target, gates, and phased implementation contract are documented in [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md).
 
 ## Architecture
@@ -50,11 +49,8 @@ Additional review fixtures are available in the inbox: **No slots fixture** demo
 
 ## Deliberate MVP boundaries
 
-The WhatsApp channel, availability data, AI extraction, and outbound send are simulated with seeded local state. The console demonstrates the observable workflow, not a production integration. Production work would add provider-backed message ingestion, structured LLM outputs, persistence, authentication, and scheduling-system integration.
+The WhatsApp channel, availability data, AI extraction, and outbound send are simulated with seeded local state. The console demonstrates the observable workflow, not a production integration. Production work would add provider-backed message ingestion, structured LLM outputs, persistence, Supabase authentication, and scheduling-system integration. The Supabase handoff is documented in [SUPABASE_MIGRATION.md](./SUPABASE_MIGRATION.md).
 
-## Authentication
-
-The operations console is protected by a Vercel-compatible demo authentication boundary. Login creates an HMAC-signed, HTTP-only session cookie; `/api/workflow` demonstrates server-side authorization and `/api/health` remains public for health checks. Configure `TRIALFLOW_SESSION_SECRET`, `TRIALFLOW_DEMO_EMAIL`, and `TRIALFLOW_DEMO_PASSWORD` in the deployment environment. Local development uses safe demo defaults only when `NODE_ENV` is not `production`.
 
 ## Simulated vs production-ready
 

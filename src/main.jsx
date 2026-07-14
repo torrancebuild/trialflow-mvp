@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { conversations, slots } from './workflow/fixtures'
 import { processConversation } from './workflow/engine'
@@ -17,36 +17,11 @@ function Icon({ name, size = 18 }) {
 
 function Avatar({ person, small = false }) { return <div className={`avatar ${person.tone || 'purple'} ${small ? 'small' : ''}`}>{person.initials}</div> }
 
-function LoginScreen({ onAuthenticated }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-
-  async function submit(event) {
-    event.preventDefault()
-    setSubmitting(true)
-    setError('')
-    try {
-      const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email, password }) })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to sign in')
-      onAuthenticated(result.user)
-    } catch (cause) {
-      setError(cause.message)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return <main className="auth-shell"><section className="auth-card" aria-labelledby="login-title"><div className="auth-mark">TF</div><p className="auth-eyebrow">TrialFlow operations</p><h1 id="login-title">Sign in to your workspace</h1><p className="auth-copy">Review conversations, approve replies, and manage trial bookings securely.</p><form onSubmit={submit}><label htmlFor="email">Email</label><input id="email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required/><label htmlFor="password">Password</label><input id="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required/>{error && <p className="auth-error" role="alert">{error}</p>}<button className="auth-submit" type="submit" disabled={submitting}>{submitting ? 'Signing in…' : 'Sign in'}</button></form><p className="auth-footnote">Demo access is controlled by the server environment.</p></section></main>
-}
-
 const stateLabel = { [TASK_STATES.NEW]: 'New inquiry detected', [TASK_STATES.COLLECTING_INFO]: 'Collecting missing info', [TASK_STATES.READY_TO_OFFER]: 'Ready to offer slots', [TASK_STATES.AWAITING_CUSTOMER]: 'Awaiting customer reply', [TASK_STATES.READY_FOR_CONFIRMATION]: 'Ready for confirmation', [TASK_STATES.CONFIRMED]: 'Confirmed booking', [TASK_STATES.NEEDS_HUMAN]: 'Needs human review' }
 const humanReason = { no_matching_slots: 'No available slots match the customer’s preferences.', low_confidence: 'The message is ambiguous and needs an operator to interpret it.', unsupported_intent: 'This request is outside the trial-booking workflow.', sensitive_or_personalized_request: 'This request needs sensitive, personalized judgment.' }
 const stateOrder = [TASK_STATES.NEW, TASK_STATES.COLLECTING_INFO, TASK_STATES.READY_TO_OFFER, TASK_STATES.AWAITING_CUSTOMER, TASK_STATES.READY_FOR_CONFIRMATION, TASK_STATES.CONFIRMED]
 
-function Workspace({ user, onLogout }) {
+function App() {
   const [selected, setSelected] = useState('maya')
   const [tasks, setTasks] = useState(buildTasks)
   const [lastError, setLastError] = useState('')
@@ -74,7 +49,7 @@ function Workspace({ user, onLogout }) {
   function resetTask() { setTasks((previous) => ({ ...previous, [selected]: buildTasks()[selected] })); setLastError(''); setEditMode(false) }
 
   return <div className="app-shell">{lastError && <div className="workflow-error" role="alert"><span>{lastError}</span><button onClick={() => setLastError('')}>Dismiss</button><button onClick={resetTask}>Reset task</button></div>}
-    <aside className="nav-rail"><div className="brand">TrialFlow</div><nav className="primary-nav" aria-label="Primary navigation"><button className="nav-item active"><Icon name="inbox"/><span>Inbox</span></button><button className="nav-item" onClick={() => setFilterMode('all')}><Icon name="calendar"/><span>Bookings</span></button><button className="nav-item" onClick={() => setFilterMode('open')}><Icon name="clock"/><span>Availability</span></button><button className="nav-item" onClick={() => setFilterMode('human')}><Icon name="settings"/><span>Needs human</span></button></nav><div className="user-card"><div className="user-avatar">AC</div><div><strong>{user?.name || 'Alex Chen'}</strong><span>{user?.role || 'Manager'}</span></div><button className="logout-button" onClick={onLogout}>Sign out</button></div></aside>
+    <aside className="nav-rail"><div className="brand">TrialFlow</div><nav className="primary-nav" aria-label="Primary navigation"><button className="nav-item active"><Icon name="inbox"/><span>Inbox</span></button><button className="nav-item" onClick={() => setFilterMode('all')}><Icon name="calendar"/><span>Bookings</span></button><button className="nav-item" onClick={() => setFilterMode('open')}><Icon name="clock"/><span>Availability</span></button><button className="nav-item" onClick={() => setFilterMode('human')}><Icon name="settings"/><span>Needs human</span></button></nav><div className="user-card"><div className="user-avatar">AC</div><div><strong>Alex Chen</strong><span>Manager</span></div><span className="chevron">⌄</span></div></aside>
 
     <section className={`inbox-panel ${mobilePanel === 'inbox' ? 'mobile-show' : ''}`}><header className="panel-header"><h1>Inbox</h1><button className="icon-button" aria-label="Filter inbox" onClick={() => setFilterMode(filterMode === 'open' ? 'all' : 'open')}><Icon name="filter"/></button></header><div className="section-label"><span>{filterMode === 'human' ? 'Needs human' : filterMode === 'all' ? 'All tasks' : 'Open tasks'}</span><strong>{filterMode === 'all' ? conversations.length : filterMode === 'human' ? conversations.filter((item) => tasks[item.id].state === TASK_STATES.NEEDS_HUMAN).length : pendingCount}</strong></div><div className="conversation-list">{visibleConversations.length ? visibleConversations.map((item) => { const itemTask = tasks[item.id]; return <button key={item.id} className={`conversation-item ${selected === item.id ? 'selected' : ''} ${itemTask.state === TASK_STATES.NEEDS_HUMAN ? 'human' : ''}`} onClick={() => selectConversation(item.id)}><Avatar person={item} small/><div className="conversation-copy"><div className="conversation-top"><strong>{item.name}</strong><time>{item.time}</time></div><p>{item.preview}</p></div>{item.unread && <span className="unread-dot"/>}{itemTask.state === TASK_STATES.NEEDS_HUMAN && <span className="human-dot">!</span>}</button> }) : <div className="inbox-empty"><strong>No tasks in this view</strong><span>Try another filter or return to open tasks.</span></div>}</div><div className="list-footer"><span>Workflow monitor</span><small>{pendingCount} tasks need attention</small></div></section>
 
@@ -88,31 +63,6 @@ function Workspace({ user, onLogout }) {
       <section className="inspector-section activity"><div className="section-heading"><h3>Activity log</h3><button className="text-button" onClick={() => setShowAllActivity(!showAllActivity)}>{showAllActivity ? 'Collapse' : 'View all'}</button></div><div className="activity-list">{task.activityLog.slice(showAllActivity ? 0 : -4).map((event) => <div key={event.id}><span className={`activity-mark ${event.type.includes('human') || event.type.includes('error') ? 'warning' : 'done'}`}>{event.type.includes('human') ? '!' : '✓'}</span><time>{event.at}</time><p>{event.message}</p></div>)}</div></section>
     </aside><div className="mobile-tabs"><button className={mobilePanel === 'inbox' ? 'active' : ''} onClick={() => setMobilePanel('inbox')}>Inbox</button><button className={mobilePanel === 'chat' ? 'active' : ''} onClick={() => setMobilePanel('chat')}>Conversation</button><button className={mobilePanel === 'inspector' ? 'active' : ''} onClick={() => setMobilePanel('inspector')}>AI task</button></div>
   </div>
-}
-
-function App() {
-  const [status, setStatus] = useState('loading')
-  const [user, setUser] = useState(null)
-
-  useEffect(() => {
-    fetch('/api/auth/session', { credentials: 'include' })
-      .then(async (response) => {
-        const result = await response.json()
-        if (response.ok && result.authenticated) { setUser(result.user); setStatus('authenticated') }
-        else setStatus('unauthenticated')
-      })
-      .catch(() => setStatus('unauthenticated'))
-  }, [])
-
-  async function logout() {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-    setUser(null)
-    setStatus('unauthenticated')
-  }
-
-  if (status === 'loading') return <main className="auth-shell"><div className="auth-loading">Checking your session…</div></main>
-  if (status === 'unauthenticated') return <LoginScreen onAuthenticated={(nextUser) => { setUser(nextUser); setStatus('authenticated') }}/>
-  return <Workspace user={user} onLogout={logout}/>
 }
 
 createRoot(document.getElementById('root')).render(<App />)
