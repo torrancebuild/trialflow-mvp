@@ -48,6 +48,7 @@ function App({ user, onSignOut }) {
   const [filterMode, setFilterMode] = useState('open')
   const [showAllActivity, setShowAllActivity] = useState(false)
   const [mobilePanel, setMobilePanel] = useState('console')
+  const [signingOut, setSigningOut] = useState(false)
   const current = conversations.find((item) => item.id === selected) || conversations[0]
   const task = tasks[selected]
   const isHuman = task.state === TASK_STATES.NEEDS_HUMAN
@@ -66,9 +67,13 @@ function App({ user, onSignOut }) {
   }
   function selectConversation(id) { setSelected(id); setLastError(''); setEditMode(false); setMobilePanel('console') }
   function resetTask() { setTasks((previous) => ({ ...previous, [selected]: buildTasks()[selected] })); setLastError(''); setEditMode(false) }
+  async function handleSignOut() {
+    setSigningOut(true)
+    try { await onSignOut() } catch (error) { setLastError(error.message || 'Unable to sign out. Please try again.') } finally { setSigningOut(false) }
+  }
 
   return <div className="app-shell">{lastError && <div className="workflow-error" role="alert"><span>{lastError}</span><button onClick={() => setLastError('')}>Dismiss</button><button onClick={resetTask}>Reset task</button></div>}
-    <aside className="nav-rail"><div className="brand">TrialFlow</div><nav className="primary-nav" aria-label="Primary navigation"><button className="nav-item active"><Icon name="inbox"/><span>Inbox</span></button><button className="nav-item" onClick={() => setFilterMode('all')}><Icon name="calendar"/><span>Bookings</span></button><button className="nav-item" onClick={() => setFilterMode('open')}><Icon name="clock"/><span>Availability</span></button><button className="nav-item" onClick={() => setFilterMode('human')}><Icon name="settings"/><span>Needs human</span></button></nav><div className="user-card"><div className="user-avatar">{user?.email?.slice(0, 2).toUpperCase() || 'AC'}</div><div><strong>{user?.user_metadata?.full_name || user?.email || 'Alex Chen'}</strong><span>Manager</span></div>{user ? <button className="sign-out-button" onClick={onSignOut}>Sign out</button> : <span className="chevron">⌄</span>}</div></aside>
+    <aside className="nav-rail"><div className="brand">TrialFlow</div><nav className="primary-nav" aria-label="Primary navigation"><button className="nav-item active"><Icon name="inbox"/><span>Inbox</span></button><button className="nav-item" onClick={() => setFilterMode('all')}><Icon name="calendar"/><span>Bookings</span></button><button className="nav-item" onClick={() => setFilterMode('open')}><Icon name="clock"/><span>Availability</span></button><button className="nav-item" onClick={() => setFilterMode('human')}><Icon name="settings"/><span>Needs human</span></button></nav><div className="user-card"><div className="user-avatar">{user?.email?.slice(0, 2).toUpperCase() || 'AC'}</div><div><strong>{user?.user_metadata?.full_name || user?.email || 'Alex Chen'}</strong><span>Manager</span></div>{user ? <button type="button" className="sign-out-button" aria-label="Sign out of TrialFlow" onClick={handleSignOut} disabled={signingOut}>{signingOut ? 'Signing out…' : 'Sign out'}</button> : <span className="chevron">⌄</span>}</div></aside>
 
     <section className={`inbox-panel ${mobilePanel === 'inbox' ? 'mobile-show' : ''}`}><header className="panel-header"><h1>Inbox</h1><button className="icon-button" aria-label="Filter inbox" onClick={() => setFilterMode(filterMode === 'open' ? 'all' : 'open')}><Icon name="filter"/></button></header><div className="section-label"><span>{filterMode === 'human' ? 'Needs human' : filterMode === 'all' ? 'All tasks' : 'Open tasks'}</span><strong>{filterMode === 'all' ? conversations.length : filterMode === 'human' ? conversations.filter((item) => tasks[item.id].state === TASK_STATES.NEEDS_HUMAN).length : pendingCount}</strong></div><div className="conversation-list">{visibleConversations.length ? visibleConversations.map((item) => { const itemTask = tasks[item.id]; return <button key={item.id} className={`conversation-item ${selected === item.id ? 'selected' : ''} ${itemTask.state === TASK_STATES.NEEDS_HUMAN ? 'human' : ''}`} onClick={() => selectConversation(item.id)}><Avatar person={item} small/><div className="conversation-copy"><div className="conversation-top"><strong>{item.name}</strong><time>{item.time}</time></div><p>{item.preview}</p></div>{item.unread && <span className="unread-dot"/>}{itemTask.state === TASK_STATES.NEEDS_HUMAN && <span className="human-dot">!</span>}</button> }) : <div className="inbox-empty"><strong>No tasks in this view</strong><span>Try another filter or return to open tasks.</span></div>}</div><div className="list-footer"><span>Workflow monitor</span><small>{pendingCount} tasks need attention</small></div></section>
 
@@ -103,9 +108,15 @@ function Root() {
     return () => { mounted = false; subscription.unsubscribe() }
   }, [])
 
+  async function signOut() {
+    const { error } = await supabase.auth.signOut({ scope: 'local' })
+    if (error) throw error
+    setSession(null)
+  }
+
   if (!authReady) return <main className="auth-shell"><section className="auth-card auth-loading"><div className="auth-mark">TF</div><p>Checking your session…</p></section></main>
   if (isSupabaseConfigured && !session) return <AuthScreen />
-  return <App user={session?.user} onSignOut={() => supabase?.auth.signOut({ scope: 'local' })} />
+  return <App user={session?.user} onSignOut={signOut} />
 }
 
 createRoot(document.getElementById('root')).render(<Root />)
