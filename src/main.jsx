@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { conversations, slots } from './workflow/fixtures'
 import { processConversation } from './workflow/engine'
 import { reduceTask } from './workflow/reducer'
 import { TASK_STATES } from './workflow/types'
+import { isSupabaseConfigured, supabase } from './lib/supabase'
 import './styles.css'
 
 const buildTasks = () => Object.fromEntries(conversations.map((conversation) => [conversation.id, processConversation({ taskId: `task-${conversation.id}`, conversationId: conversation.id, messages: conversation.initialMessages || conversation.messages, availability: conversation.id === 'empty' ? [] : slots })]))
@@ -21,7 +22,25 @@ const stateLabel = { [TASK_STATES.NEW]: 'New inquiry detected', [TASK_STATES.COL
 const humanReason = { no_matching_slots: 'No available slots match the customer’s preferences.', low_confidence: 'The message is ambiguous and needs an operator to interpret it.', unsupported_intent: 'This request is outside the trial-booking workflow.', sensitive_or_personalized_request: 'This request needs sensitive, personalized judgment.' }
 const stateOrder = [TASK_STATES.NEW, TASK_STATES.COLLECTING_INFO, TASK_STATES.READY_TO_OFFER, TASK_STATES.AWAITING_CUSTOMER, TASK_STATES.READY_FOR_CONFIRMATION, TASK_STATES.CONFIRMED]
 
-function App() {
+function AuthScreen() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  async function signIn(event) {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    if (signInError) setError(signInError.message)
+    setBusy(false)
+  }
+
+  return <main className="auth-shell"><section className="auth-card" aria-labelledby="auth-title"><div className="auth-mark">TF</div><span className="auth-kicker">TRIALFLOW OPERATIONS</span><h1 id="auth-title">Sign in to your workspace</h1><p>Review conversations, approve replies, and manage trial bookings securely.</p><form onSubmit={signIn}><label htmlFor="auth-email">Email</label><input id="auth-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required/><label htmlFor="auth-password">Password</label><input id="auth-password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required/>{error && <div className="auth-error" role="alert">{error}</div>}<button className="auth-submit" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button></form><small>Authentication is managed by Supabase.</small></section></main>
+}
+
+function App({ user, onSignOut }) {
   const [selected, setSelected] = useState('maya')
   const [tasks, setTasks] = useState(buildTasks)
   const [lastError, setLastError] = useState('')
@@ -49,7 +68,7 @@ function App() {
   function resetTask() { setTasks((previous) => ({ ...previous, [selected]: buildTasks()[selected] })); setLastError(''); setEditMode(false) }
 
   return <div className="app-shell">{lastError && <div className="workflow-error" role="alert"><span>{lastError}</span><button onClick={() => setLastError('')}>Dismiss</button><button onClick={resetTask}>Reset task</button></div>}
-    <aside className="nav-rail"><div className="brand">TrialFlow</div><nav className="primary-nav" aria-label="Primary navigation"><button className="nav-item active"><Icon name="inbox"/><span>Inbox</span></button><button className="nav-item" onClick={() => setFilterMode('all')}><Icon name="calendar"/><span>Bookings</span></button><button className="nav-item" onClick={() => setFilterMode('open')}><Icon name="clock"/><span>Availability</span></button><button className="nav-item" onClick={() => setFilterMode('human')}><Icon name="settings"/><span>Needs human</span></button></nav><div className="user-card"><div className="user-avatar">AC</div><div><strong>Alex Chen</strong><span>Manager</span></div><span className="chevron">⌄</span></div></aside>
+    <aside className="nav-rail"><div className="brand">TrialFlow</div><nav className="primary-nav" aria-label="Primary navigation"><button className="nav-item active"><Icon name="inbox"/><span>Inbox</span></button><button className="nav-item" onClick={() => setFilterMode('all')}><Icon name="calendar"/><span>Bookings</span></button><button className="nav-item" onClick={() => setFilterMode('open')}><Icon name="clock"/><span>Availability</span></button><button className="nav-item" onClick={() => setFilterMode('human')}><Icon name="settings"/><span>Needs human</span></button></nav><div className="user-card"><div className="user-avatar">{user?.email?.slice(0, 2).toUpperCase() || 'AC'}</div><div><strong>{user?.user_metadata?.full_name || user?.email || 'Alex Chen'}</strong><span>Manager</span></div>{user ? <button className="sign-out-button" onClick={onSignOut}>Sign out</button> : <span className="chevron">⌄</span>}</div></aside>
 
     <section className={`inbox-panel ${mobilePanel === 'inbox' ? 'mobile-show' : ''}`}><header className="panel-header"><h1>Inbox</h1><button className="icon-button" aria-label="Filter inbox" onClick={() => setFilterMode(filterMode === 'open' ? 'all' : 'open')}><Icon name="filter"/></button></header><div className="section-label"><span>{filterMode === 'human' ? 'Needs human' : filterMode === 'all' ? 'All tasks' : 'Open tasks'}</span><strong>{filterMode === 'all' ? conversations.length : filterMode === 'human' ? conversations.filter((item) => tasks[item.id].state === TASK_STATES.NEEDS_HUMAN).length : pendingCount}</strong></div><div className="conversation-list">{visibleConversations.length ? visibleConversations.map((item) => { const itemTask = tasks[item.id]; return <button key={item.id} className={`conversation-item ${selected === item.id ? 'selected' : ''} ${itemTask.state === TASK_STATES.NEEDS_HUMAN ? 'human' : ''}`} onClick={() => selectConversation(item.id)}><Avatar person={item} small/><div className="conversation-copy"><div className="conversation-top"><strong>{item.name}</strong><time>{item.time}</time></div><p>{item.preview}</p></div>{item.unread && <span className="unread-dot"/>}{itemTask.state === TASK_STATES.NEEDS_HUMAN && <span className="human-dot">!</span>}</button> }) : <div className="inbox-empty"><strong>No tasks in this view</strong><span>Try another filter or return to open tasks.</span></div>}</div><div className="list-footer"><span>Workflow monitor</span><small>{pendingCount} tasks need attention</small></div></section>
 
@@ -65,4 +84,28 @@ function App() {
   </div>
 }
 
-createRoot(document.getElementById('root')).render(<App />)
+function Root() {
+  const [session, setSession] = useState(null)
+  const [authReady, setAuthReady] = useState(!isSupabaseConfigured)
+
+  useEffect(() => {
+    if (!supabase) return undefined
+    let mounted = true
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) { setSession(data.session); setAuthReady(true) }
+    }).catch(() => {
+      if (mounted) { setSession(null); setAuthReady(true) }
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setAuthReady(true)
+    })
+    return () => { mounted = false; subscription.unsubscribe() }
+  }, [])
+
+  if (!authReady) return <main className="auth-shell"><section className="auth-card auth-loading"><div className="auth-mark">TF</div><p>Checking your session…</p></section></main>
+  if (isSupabaseConfigured && !session) return <AuthScreen />
+  return <App user={session?.user} onSignOut={() => supabase?.auth.signOut({ scope: 'local' })} />
+}
+
+createRoot(document.getElementById('root')).render(<Root />)

@@ -17,6 +17,10 @@ The live presentation flow is documented in [DEMO_SCRIPT.md](./DEMO_SCRIPT.md).
 
 The production target, gates, and phased implementation contract are documented in [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md).
 
+## Supabase authentication
+
+The app has two modes. Without `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, it runs the deterministic local demo. When both are set, it requires Supabase email/password authentication, persists the browser session, and exposes sign-out from the workspace profile control. Copy `.env.example` to `.env.local` for local configuration. The database boundary and deployment checklist are in [SUPABASE_MIGRATION.md](./SUPABASE_MIGRATION.md).
+
 ## Architecture
 
 ```mermaid
