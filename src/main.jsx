@@ -4,7 +4,7 @@ import { conversations, slots } from './workflow/fixtures'
 import { processConversation } from './workflow/engine'
 import { reduceTask } from './workflow/reducer'
 import { TASK_STATES } from './workflow/types'
-import { isSupabaseConfigured, supabase } from './lib/supabase'
+import { clearSupabaseSessionStorage, isSupabaseConfigured, supabase } from './lib/supabase'
 import './styles.css'
 
 const buildTasks = () => Object.fromEntries(conversations.map((conversation) => [conversation.id, processConversation({ taskId: `task-${conversation.id}`, conversationId: conversation.id, messages: conversation.initialMessages || conversation.messages, availability: conversation.id === 'empty' ? [] : slots })]))
@@ -109,9 +109,15 @@ function Root() {
   }, [])
 
   async function signOut() {
-    const { error } = await supabase.auth.signOut({ scope: 'local' })
-    if (error) throw error
-    setSession(null)
+    let signOutError
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'local' })
+      signOutError = error
+    } finally {
+      clearSupabaseSessionStorage()
+      setSession(null)
+    }
+    if (signOutError) throw signOutError
   }
 
   if (!authReady) return <main className="auth-shell"><section className="auth-card auth-loading"><div className="auth-mark">TF</div><p>Checking your session…</p></section></main>
