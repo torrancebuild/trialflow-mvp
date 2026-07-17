@@ -1,0 +1,208 @@
+{
+  "main": {
+    "id": "e79f4536529b3047",
+    "type": "split",
+    "children": [
+      {
+        "id": "394c637851c08bc0",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9bfe184ccabdf94f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "USER_TESTING_PLAN.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "USER_TESTING_PLAN"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "9a898a27b667b2d0",
+    "type": "split",
+    "children": [
+      {
+        "id": "e9c7ee3758b66261",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ca9d0e915b90360f",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "9f4f639bef5bc6dc",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "cbd54fba45a4d82c",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "297b2394ebf57813",
+    "type": "split",
+    "children": [
+      {
+        "id": "ed59ecea6b7294b9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "43256b0178ff9dff",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "USER_TESTING_PLAN.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for USER_TESTING_PLAN"
+            }
+          },
+          {
+            "id": "3cbaf717a3635fd6",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "USER_TESTING_PLAN.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from USER_TESTING_PLAN"
+            }
+          },
+          {
+            "id": "ce297aaeceafd6d6",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "d499af852fff9d4c",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "37d695408df6f39c",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "USER_TESTING_PLAN.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of USER_TESTING_PLAN"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "9bfe184ccabdf94f",
+  "lastOpenFiles": [
+    "dist/assets/index-DhPH2cN3.js",
+    "dist/assets/index-vyNWcKsy.js",
+    "dist/assets/index-DIGniTyE.css",
+    "dist/assets/index-BVOashd-.js",
+    "dist/assets/index-4G67FkEb.css",
+    "dist/assets/index-cX06RMba.js",
+    "dist/assets/index-PNw-uW2T.js",
+    "dist/assets/index-WEuLJMLA.css",
+    "dist/assets/index-DXOagSJ3.js",
+    "dist/assets/index-HjOAmkDS.css",
+    "dist/assets/index-DGjDTDnv.js",
+    "PRODUCTION_READINESS.md",
+    "DEMO_SCRIPT.md",
+    "IMPLEMENTATION_PLAN.md",
+    "WORKFLOW_SPEC.md",
+    "SIMULATOR_CODE_REVIEW.md",
+    "USER_TESTING_PLAN.md",
+    "trialflow-concept.png",
+    "CASE_STUDY.md"
+  ]
+}

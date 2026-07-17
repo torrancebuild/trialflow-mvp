@@ -3,3 +3,6 @@ dist/
 output/
 test-results/
 .DS_Store
+.env.local
+.vercel
+.env*

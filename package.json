@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node tests/workflow.test.mjs",
-    "test:e2e": "playwright test"
+    "test": "node tests/workflow.test.mjs && node tests/migration.test.mjs && node --test tests/api/*.test.mjs",
+    "test:e2e": "playwright test",
+    "test:db": "supabase test db",
+    "verify:staging": "node scripts/verify-staging.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.5",

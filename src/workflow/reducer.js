@@ -1,4 +1,4 @@
-import { getMissingFields, matchSlots, processConversation } from './engine.js'
+import { createDraftReply, getMissingFields, matchSlots, processConversation } from './engine.js'
 import { TASK_STATES } from './types.js'
 
 const append = (task, type, message) => ({ ...task, activityLog: [...task.activityLog, { id: `${task.id}-${task.activityLog.length + 1}`, at: '10:25 AM', type, message }] })
@@ -16,7 +16,7 @@ export function reduceTask(task, event) {
       return { task: append(task, 'follow_up_drafted', 'Drafted a missing-information follow-up') }
     case 'DRAFT_SLOT_REPLY':
       if (task.state !== TASK_STATES.READY_TO_OFFER || !task.suggestedSlots.length) return failure(task, 'NO_SLOTS', 'Cannot draft a slot reply without matching slots.')
-      return { task: append({ ...task, state: TASK_STATES.AWAITING_CUSTOMER, draftStatus: 'suggested', draftReply: 'We found matching trial slots. Which option would you prefer?' }, 'draft_created', 'Drafted slot options') }
+      return { task: append({ ...task, state: TASK_STATES.AWAITING_CUSTOMER, draftStatus: 'suggested', draftReply: createDraftReply({ state: TASK_STATES.AWAITING_CUSTOMER, fields: task.extractedFields, slotsFound: task.suggestedSlots }) }, 'draft_created', 'Drafted slot options') }
     case 'CUSTOMER_SELECTED_SLOT':
       if (task.state !== TASK_STATES.AWAITING_CUSTOMER) return failure(task, 'INVALID_SELECTION_STATE', 'Offer the matching slots before selecting one.')
       if (!task.suggestedSlots.some((slot) => slot.id === event.slotId)) return failure(task, 'INVALID_SLOT', 'Selected slot is not one of the suggested options.')
@@ -34,7 +34,7 @@ export function reduceTask(task, event) {
       if (!task.draftReply) return failure(task, 'NO_DRAFT', 'There is no draft to approve.')
       if (task.draftStatus === 'rejected') return failure(task, 'REJECTED_DRAFT', 'Create or edit a new draft before approving.')
       if (task.state === TASK_STATES.NEEDS_HUMAN && task.owner !== 'human') return failure(task, 'TAKEOVER_REQUIRED', 'Take ownership of this task before approving a human-review reply.')
-      if (![TASK_STATES.READY_FOR_CONFIRMATION, TASK_STATES.COLLECTING_INFO, TASK_STATES.NEEDS_HUMAN].includes(task.state)) return failure(task, 'INVALID_APPROVAL_STATE', 'Select a slot before approving the booking reply.')
+      if (![TASK_STATES.READY_TO_OFFER, TASK_STATES.READY_FOR_CONFIRMATION, TASK_STATES.COLLECTING_INFO, TASK_STATES.NEEDS_HUMAN].includes(task.state)) return failure(task, 'INVALID_APPROVAL_STATE', 'This task is not ready for draft approval.')
       return { task: append({ ...task, draftStatus: 'approved' }, 'draft_approved', 'Operations approved the draft reply') }
     case 'REJECT_DRAFT':
       if (task.state === TASK_STATES.CONFIRMED) return failure(task, 'CONFIRMED_TASK_LOCKED', 'Confirmed bookings cannot be rejected.')

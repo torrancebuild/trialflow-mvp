@@ -55,3 +55,27 @@ test('reloading resets the local simulation state', async ({ page }) => {
   await page.reload()
   await expect(page.getByText('Ready to offer slots', { exact: true })).toBeVisible()
 })
+
+test('mobile console switches between inbox, conversation, and AI task panels', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await expect(page.locator('.mobile-tabs')).toBeVisible()
+  await page.getByRole('button', { name: 'Conversation' }).click()
+  await expect(page.locator('.chat-panel.mobile-show')).toBeVisible()
+  await page.getByRole('button', { name: 'AI task' }).click()
+  await expect(page.locator('.inspector.mobile-show')).toBeVisible()
+})
+
+test('new AI customer sends the first message and opens the new task', async ({ page }) => {
+  await page.route('**/api/local/understand', async (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({ intent: 'new_trial_inquiry', confidence: 0.98, extractedFields: { childAge: 6, location: 'Bedok', preferredDays: ['Saturday'], preferredTime: 'morning' }, draftReply: 'I found a trial option for you.' }),
+  }))
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Add a new AI customer' }).click()
+
+  await expect(page.getByRole('heading', { name: 'New customer 1' })).toBeVisible()
+  await expect(page.locator('.message.incoming', { hasText: 'trial class for my 6-year-old near Bedok' })).toBeVisible()
+  await expect(page.getByText('Simulator', { exact: true })).toBeVisible()
+})

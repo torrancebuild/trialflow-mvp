@@ -3,6 +3,7 @@ import { conversations, slots } from '../src/workflow/fixtures.js'
 import { classifyIntent, extractFields, getMissingFields, matchSlots, processConversation } from '../src/workflow/engine.js'
 import { reduceTask } from '../src/workflow/reducer.js'
 import { TASK_STATES } from '../src/workflow/types.js'
+import { getOperatorGuide } from '../src/workflow/operator-guide.js'
 
 const maya = conversations.find((item) => item.id === 'maya')
 const mayaInitialMessages = maya.initialMessages
@@ -26,6 +27,8 @@ assert.deepEqual(matchSlots({ childAge: 6, location: 'Bedok', preferredDays: ['w
 assert.equal(matchSlots({ childAge: 10, location: 'Bedok', preferredDays: ['weekends'] }, slots).length, 0)
 
 const mayaTask = processConversation({ taskId: 'task-maya', conversationId: 'maya', messages: mayaInitialMessages, availability: slots })
+assert.equal(getOperatorGuide(mayaTask).action, 'DRAFT_SLOT_REPLY')
+assert.equal(getOperatorGuide(mayaTask).actionLabel, 'Offer slots')
 assert.equal(mayaTask.state, TASK_STATES.READY_TO_OFFER)
 assert.equal(mayaTask.suggestedSlots.length, 2)
 assert.equal(mayaTask.draftStatus, 'suggested')
@@ -53,13 +56,18 @@ let result = reduceTask(task, { type: 'CONFIRM_BOOKING' })
 assert.equal(result.error.code, 'SLOT_REQUIRED')
 task = reduceTask(task, { type: 'DRAFT_SLOT_REPLY' }).task
 assert.equal(task.state, TASK_STATES.AWAITING_CUSTOMER)
+assert.match(task.draftReply, /1\. Sat, 24 May 2025, 9:00 AM–10:00 AM at Bedok/)
+assert.match(task.draftReply, /2\. Sun, 25 May 2025, 10:30 AM–11:30 AM at Bedok/)
+assert.equal(getOperatorGuide(task).action, null)
 result = reduceTask(task, { type: 'CUSTOMER_SELECTED_SLOT', slotId: 'sat' })
 task = result.task
 assert.equal(task.state, TASK_STATES.READY_FOR_CONFIRMATION)
 assert.equal(task.draftStatus, 'suggested')
+assert.equal(getOperatorGuide(task).action, 'APPROVE_DRAFT')
 result = reduceTask(task, { type: 'CONFIRM_BOOKING' })
 assert.equal(result.error.code, 'APPROVAL_REQUIRED')
 task = reduceTask(task, { type: 'APPROVE_DRAFT' }).task
+assert.equal(getOperatorGuide(task).action, 'CONFIRM_BOOKING')
 task = reduceTask(task, { type: 'CONFIRM_BOOKING' }).task
 assert.equal(task.state, TASK_STATES.CONFIRMED)
 task = reduceTask(task, { type: 'SEND_REPLY' }).task
@@ -78,6 +86,7 @@ assert.equal(reduceTask(editedBeforeConfirmation, { type: 'APPROVE_DRAFT' }).tas
 
 const humanResult = reduceTask(humanTask, { type: 'APPROVE_DRAFT' })
 assert.equal(humanResult.error.code, 'TAKEOVER_REQUIRED')
+assert.equal(getOperatorGuide(humanTask).action, 'TAKE_OVER')
 assert.equal(reduceTask(mayaTask, { type: 'TAKE_OVER' }).error.code, 'TAKEOVER_NOT_REQUIRED')
 const humanOwned = reduceTask(humanTask, { type: 'TAKE_OVER' }).task
 assert.equal(humanOwned.owner, 'human')
@@ -86,10 +95,21 @@ assert.equal(reduceTask(humanTask, { type: 'REJECT_DRAFT' }).task.activityLog.at
 
 const processed = reduceTask(missingTask, { type: 'CUSTOMER_REPLIED', messages: mayaInitialMessages, availability: slots }).task
 assert.equal(processed.state, TASK_STATES.READY_TO_OFFER)
+assert.equal(reduceTask(processed, { type: 'APPROVE_DRAFT' }).task.draftStatus, 'approved')
 assert.equal(reduceTask(processed, { type: 'DRAFT_SLOT_REPLY' }).task.state, TASK_STATES.AWAITING_CUSTOMER)
 
 const editedTiming = reduceTask(missingTask, { type: 'UPDATE_FIELDS', fields: { childAge: 6, location: 'Bedok', preferredDays: ['weekends'], preferredTime: undefined }, availability: slots }).task
 assert.equal(editedTiming.state, TASK_STATES.READY_TO_OFFER)
 assert.deepEqual(editedTiming.suggestedSlots.map((slot) => slot.id), ['sat', 'sun'])
+
+const singleSlotLlmTask = processConversation({
+  taskId: 'task-single-slot-llm',
+  conversationId: 'single-slot-llm',
+  messages: [{ direction: 'inbound', text: 'I need a Saturday morning trial for my 6-year-old near Bedok.' }],
+  availability: slots,
+  understanding: { intent: 'new_trial_inquiry', confidence: 0.98, extractedFields: { childAge: 6, location: 'Bedok', preferredDays: ['Saturday'], preferredTime: 'morning' }, draftReply: 'I found one option. Which one do you prefer?' },
+})
+assert.equal(singleSlotLlmTask.suggestedSlots.length, 1)
+assert.match(singleSlotLlmTask.draftReply, /reserve it for you/)
 
 console.log('workflow engine and reducer tests passed')

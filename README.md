@@ -16,10 +16,15 @@ The portfolio narrative and tradeoffs are documented in [CASE_STUDY.md](./CASE_S
 The live presentation flow is documented in [DEMO_SCRIPT.md](./DEMO_SCRIPT.md).
 
 The production target, gates, and phased implementation contract are documented in [PRODUCTION_READINESS.md](./PRODUCTION_READINESS.md).
+The customer-side AI simulator implementation and strict acceptance gates are documented in [SIMULATOR_ACCEPTANCE.md](./SIMULATOR_ACCEPTANCE.md).
 
 ## Supabase authentication
 
-The app has two modes. Without `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`, it runs the deterministic local demo. When both are set, it requires Supabase email/password authentication, persists the browser session, and exposes sign-out from the workspace profile control. Copy `.env.example` to `.env.local` for local configuration. The database boundary and deployment checklist are in [SUPABASE_MIGRATION.md](./SUPABASE_MIGRATION.md).
+The app has two modes. Without `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, and `VITE_SUPABASE_WORKSPACE_ID`, it runs the deterministic local demo. When all three are set, it requires Supabase email/password authentication, loads the workspace through the server API, persists task changes, and exposes sign-out from the workspace profile control. Copy `.env.example` to `.env.local` for local configuration. The database boundary and deployment checklist are in [SUPABASE_MIGRATION.md](./SUPABASE_MIGRATION.md).
+
+For authenticated AI-customer simulations, configure `OPENAI_API_KEY` on the server only. `SIMULATOR_LLM_MODEL` and `SIMULATOR_LLM_PROMPT_VERSION` are optional; the browser must not receive these variables.
+
+The local **New AI customer** flow also uses the server-side structured LLM endpoint. Set `OPENAI_API_KEY` and optionally `LLM_MODEL` in `.env.local`, then restart `npm run dev`. The browser never receives the API key. If the key is absent, the flow stops with an explicit configuration error rather than silently classifying messages with the deterministic fixture parser.
 
 ## Architecture
 
@@ -65,3 +70,5 @@ The WhatsApp channel, availability data, AI extraction, and outbound send are si
 | Availability | Local slot fixtures | Scheduling-system adapter |
 | Workflow state | In-memory reducer and activity log | Persistent task store and idempotent workers |
 | Replies | Local approval/send simulation | Provider send API with delivery status |
+
+The AI customer simulator uses a separate `simulator` channel/provider. Its messages are persisted through the same conversation boundary, but simulator outbound jobs are explicitly skipped by the WhatsApp worker.

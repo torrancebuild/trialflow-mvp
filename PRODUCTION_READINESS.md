@@ -55,7 +55,7 @@ WhatsApp webhook
 
 Implemented locally: pure workflow engine, guarded reducer, seeded availability matching, deterministic reply drafting, human handoff, activity log, browser console, low-confidence fixture, and reproducible acceptance tests.
 
-Not yet implemented: backend API, persistent database, queue/outbox, real WhatsApp provider, real LLM adapter, scheduling integration, authentication/authorization, production observability, and deployment infrastructure. Supabase adoption should establish the identity provider, database ownership, row-level security, multi-user roles, and server-side authorization boundary before live API work begins.
+Implemented foundation: timestamped Supabase migrations, workspace-scoped persistence, RLS, idempotent provider ingestion, optimistic and atomic task transitions, reservation RPCs, workflow/outbound queue seams, server-side bearer authorization, WhatsApp Cloud adapter, structured LLM fallback, PII-redacted logs, health/metrics helpers, and deterministic API tests. Remaining release gates are live provider/scheduling credentials, execution of pgTAP and concurrent database tests in staging, backups/restore, monitoring deployment, and rollback rehearsal.
 
 ## Phased path
 

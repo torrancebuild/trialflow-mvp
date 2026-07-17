@@ -62,20 +62,27 @@ export function decideEscalation({ intent, confidence, fields, slotsFound }) {
   return undefined
 }
 
-export function createDraftReply({ state, fields, slotsFound, needsHumanReason }) {
+const formatSlotOption = (slot, index) => `${index + 1}. ${slot.date}, ${slot.startTime}–${slot.endTime} at ${slot.location}`
+
+export function createDraftReply({ state, fields, slotsFound, needsHumanReason, llmDraftReply }) {
   if (state === TASK_STATES.NEEDS_HUMAN) return 'This request needs a human response before we reply. Please review the conversation and respond personally.'
   if (state === TASK_STATES.COLLECTING_INFO) {
     const labels = { childAge: 'your child’s age', location: 'your preferred location', preferredDaysOrTime: 'whether weekdays or weekends work better' }
     return `Sure, I can help. May I know ${getMissingFields(fields).map((field) => labels[field]).join(', ')}?`
   }
-  if (slotsFound.length) return `Thanks! We found ${slotsFound.length} trial slot${slotsFound.length === 1 ? '' : 's'} that match your preferences. Would you like to select one?`
+  if (slotsFound.length) {
+    if (slotsFound.length === 1) return 'Thanks! We found 1 trial slot that matches your preferences. Would you like us to reserve it for you?'
+    return `Thanks! We found ${slotsFound.length} trial slots that match your preferences:\n${slotsFound.map(formatSlotOption).join('\n')}\n\nWhich option would you prefer?`
+  }
   return needsHumanReason ? 'A team member will review this request and get back to you.' : ''
 }
 
-export function processConversation({ taskId, conversationId, messages, availability }) {
+export function processConversation({ taskId, conversationId, messages, availability, understanding }) {
   const task = initialTask({ id: taskId, conversationId })
-  const { intent, confidence } = classifyIntent(messages)
-  const fields = extractFields(messages)
+  const classified = classifyIntent(messages)
+  const intent = understanding?.intent || classified.intent
+  const confidence = understanding?.confidence ?? classified.confidence
+  const fields = understanding?.extractedFields ? { ...understanding.extractedFields, trialInterest: understanding.extractedFields.trialInterest ?? intent === INTENTS.TRIAL } : extractFields(messages)
   const missingFields = getMissingFields(fields)
   const preliminarySlots = missingFields.length ? [] : matchSlots(fields, availability)
   const needsHumanReason = decideEscalation({ intent, confidence, fields, slotsFound: missingFields.length ? true : preliminarySlots.length > 0 })
@@ -87,5 +94,5 @@ export function processConversation({ taskId, conversationId, messages, availabi
     ...(preliminarySlots.length ? [{ id: `${taskId}-slots`, at: '10:25 AM', type: 'slots_found', message: `Found ${preliminarySlots.length} matching slot${preliminarySlots.length === 1 ? '' : 's'}` }] : []),
     ...(needsHumanReason ? [{ id: `${taskId}-human`, at: '10:25 AM', type: 'human_review_requested', message: `Needs human review: ${needsHumanReason.replaceAll('_', ' ')}` }] : []),
   ]
-  return { ...task, intent, state, extractedFields: fields, missingFields, suggestedSlots: preliminarySlots, draftReply: createDraftReply({ state, fields, slotsFound: preliminarySlots, needsHumanReason }), draftStatus: 'suggested', confidence, decisionReason: reason, needsHumanReason, activityLog: events }
+  return { ...task, intent, state, extractedFields: fields, missingFields, suggestedSlots: preliminarySlots, draftReply: createDraftReply({ state, fields, slotsFound: preliminarySlots, needsHumanReason, llmDraftReply: understanding?.draftReply }), draftStatus: 'suggested', confidence, decisionReason: reason, needsHumanReason, activityLog: events }
 }
